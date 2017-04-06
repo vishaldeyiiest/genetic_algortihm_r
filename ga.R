@@ -1,5 +1,6 @@
 source("crossover.R")
 source("measures.R")
+library(mclust)
 
 chrinp <- function(p,chr){
   if(sum(chr) == 0){
@@ -46,6 +47,20 @@ initp <- function(n,l){
     return (s)
 }
 
+parentsel <- function(s, fit){
+  #tournament selection
+  s_copy = s
+  k = floor(runif(1, min=2, max=length(s_copy)))
+  chr_index = sample(1:length(s_copy), k)
+  p1 = chr_index[max(fit[chr_index])]
+  s_copy = s_copy[-p1]
+  k = floor(runif(1, min=3, max=length(s_copy)))
+  chr_index = sample(1:length(s_copy), k)
+  chr_index = chr_index[chr_index != p1]
+  p2 = chr_index[max(fit[chr_index])]
+  return (c(p1, p2))  
+}
+
 fitness <- function(data, chr){
     tmpdata <- data[chr==1]
     if(ncol(tmpdata)){
@@ -71,14 +86,15 @@ fitness <- function(data, chr){
 
 
 mydata <- iris[1:4]
-trials <- 10
-psize <- 5
+trials <- 100
+psize <- 10
 
 s <- initp(ncol(mydata),psize)
 fit <- rep(0,len=psize)
 for (i in 1:length(s)){
   fit[i] <- fitness(mydata,s[[i]])
 }
+
 for (i in 1:trials){
   p <- runif(1)
   # paste("probability p = ",p)
@@ -90,11 +106,14 @@ for (i in 1:trials){
       fit <- addinp(s,fit,mut_chr)
     }
   }else{
-    c <- rep(0, len = 2)
-    while(c[1] == c[2]) {
-      c <- ceiling(runif(2)*psize)
-    }
+    # c <- rep(0, len = 2)
+    # 
+    # while(c[1] == c[2]) {
+    #   c <- ceiling(runif(2)*psize)
+    # }
     # paste("crossover ",s[[c[1]]],s[[c[2]]])
+    c = parentsel(s, fit)
+    
     cross_chr <- crossover(s[[c[1]]],s[[c[2]]])
     for(j in 1:length(cross_chr)){
       if(!chrinp(s,cross_chr[[j]])){
@@ -105,3 +124,4 @@ for (i in 1:trials){
   #print(fit)
 }
 
+print(s[fit == max(fit)])
